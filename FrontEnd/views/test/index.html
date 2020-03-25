@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../../static/css/index.css">
+    <link rel="stylesheet" href="../../static/eui/element-ui.css">
+    <script src="../../static/vue/vue.min.js"></script>
+    <script src="../../static/vue/vue-resource.js"></script>
+    <script src="../../static/eui/index.js"></script>
+    <script src="../../static/comm/Ajax.js"></script>
+</head>
+<style>
+    .el-form-item {
+        width: 80%;
+    }
+</style>
+
+<body>
+    <div id="app">
+
+        <!-- 弹出表单 -->
+        <el-dialog title="New Customer" :visible.sync="dialogFormVisible">
+            <el-form ref="form" :model="form" label-width="80px">
+                <el-form-item label="Customer Name">
+                    <el-input v-model="form.customerName"></el-input>
+                </el-form-item>
+                <el-form-item label="Gender">
+                    <el-radio-group v-model="form.gender">
+                        <el-radio label="Male"></el-radio>
+                        <el-radio label="Female"></el-radio>
+                    </el-radio-group>
+                </el-form-item>
+
+                <el-form-item label="Phone">
+                    <el-input v-model="form.phone"></el-input>
+                </el-form-item>
+
+                <el-form-item label="Address">
+                    <el-input v-model="form.addr"></el-input>
+                </el-form-item>
+
+                <el-form-item>
+                    <el-button type="primary" @click="onSubmit">Save</el-button>
+                    <el-button>Cancel</el-button>
+                </el-form-item>
+            </el-form>
+        </el-dialog>
+
+
+
+        <!-- Create, Delete Button -->
+        <el-row>
+            <el-button @click="open()" type="primary" icon="el-icon-edit" circle></el-button>
+            <el-button @click="del()" :disabled="idList.length > 0? false:true" type="danger" icon="el-icon-delete" circle></el-button>
+        </el-row>
+        <!-- Data Table -->
+        <template>
+            <el-table :data="tableData" @selection-change="selectionChange" stripe style="width: 90%">
+                <el-table-column type="selection" width="55">
+                </el-table-column>
+                <el-table-column prop="customerId" label="Customer ID" width="180">
+                </el-table-column>
+                <el-table-column prop="customerName" label="Customer Name" width="180">
+                </el-table-column>
+                <el-table-column prop="gender" label="Gender" width="180">
+                </el-table-column>
+                <el-table-column prop="phone" label="Phone" width="180">
+                </el-table-column>
+                <el-table-column prop="addr" label="Address">
+                </el-table-column>
+            </el-table>
+        </template>
+        <!-- Pages -->
+        <el-pagination v-if="page.total>page.size" background layout="prev, pager, next" @current-change="currentChange" :page-size="page.size" :current-page="page.current" :total="page.total">
+        </el-pagination>
+    </div>
+</body>
+
+</html>
+
+<script>
+    var Main = {
+        data() {
+            return {
+                ajax: null,
+                //列表相关
+                tableData: [],
+                page: {
+                    current: 1,
+                    size: 5,
+                    total: 0
+                },
+
+                idList: [],
+
+                // 表单相关
+                form: {
+                    customerId: '',
+                    customerName: '',
+                    gender: '',
+                    phone: '',
+                    addr: ''
+                },
+
+                dialogFormVisible: false
+
+            }
+        },
+
+        //页面初始化的时候，去调用
+        created() {
+            this.ajax = new Ajax(this);
+            this.getData();
+        },
+
+        methods: {
+
+            //通过ajax去请求服务端，获取数据 
+            getData() {
+                let that = this;
+                let url = "customer?current=" + that.page.current +
+                    "&size=" + that.page.size;
+                //Call Ajax's GET Method
+                that.ajax.get(url, function(rs) {
+                    if (rs.code == 0) {
+                        that.tableData = rs.data.records;
+                        that.page.total = rs.data.total;
+                    }
+                });
+            },
+
+            //分页点击事件
+            currentChange(current) {
+                // console.log(current);
+                this.page.current = current;
+                this.getData();
+            },
+
+            // 行选择触发事件
+            selectionChange(selection) {
+                this.idList = [];
+                selection.forEach(element => {
+                    console.log(element.customerId);
+                    this.idList.push(element.customerId);
+                });
+                console.log(this.idList);
+            },
+
+            // 删除数据
+            del() {
+                if (this.idList.length > 0) {
+                    let that = this;
+                    let idList = that.idList.toString();
+                    let url = "customer?idList=" + idList;
+                    //Call Ajax DELETE Method
+                    that.ajax.delete(url, function(rs) {
+                        if (rs.code == 0) {
+                            //Reload Data
+                            that.getData();
+                        }
+                    });
+                }
+            },
+
+            // Open dialog form
+            open() {
+                this.dialogFormVisible = true;
+            },
+
+
+            onSubmit() {
+                let that = this;
+                let url = "customer";
+                let data = that.form;
+                //Call Ajax POST Method
+                that.ajax.post(url, function(rs) {
+                    if (rs.code == 0) {
+                        //Reload Data
+                        that.getData();
+                    }
+                }, data);
+            }
+
+        }
+    }
+    var Ctor = Vue.extend(Main)
+    new Ctor().$mount('#app')
+</script>
